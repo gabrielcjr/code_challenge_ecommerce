@@ -153,3 +153,19 @@ class ProductServiceTest(TestCase):
         result = ProductService.import_products_from_csv(csv_file)
         self.assertEqual(result["created"], 2)
         self.assertEqual(len(result["errors"]), 1)
+
+    def test_import_csv_sanitizes_xss_and_formula_injection(self):
+        csv_content = (
+            b"name,sku,description,category,price,stock,weight_kg\n"
+            b"<script>alert('xss')</script>,XS-001,Desc,ELECTRONICS,19.99,10,0.1\n"
+            b"=cmd|' /C calc'!A0,FORM-001,Formula test,BOOKS,5.00,10,0.1\n"
+        )
+        csv_file = SimpleUploadedFile("test.csv", csv_content, content_type="text/csv")
+        result = ProductService.import_products_from_csv(csv_file)
+        self.assertEqual(result["created"], 2)
+
+        xss_product = Product.objects.get(sku="XS-001")
+        self.assertNotIn("<script>", xss_product.name)
+
+        formula_product = Product.objects.get(sku="FORM-001")
+        self.assertFalse(formula_product.name.startswith("="))

@@ -1,4 +1,5 @@
 import csv
+import html
 import io
 import re
 from decimal import Decimal, InvalidOperation
@@ -8,8 +9,20 @@ from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Q
+from django.utils.html import strip_tags
 
 from .models import CategoryChoices, Product
+
+
+def _sanitize_input_text(val: Any) -> str:
+    if val is None:
+        return ""
+    text = str(val).strip()
+    text = text.replace("\x00", "")
+    text = strip_tags(text)
+    if text.startswith(("=", "+", "@", "\t", "\r")):
+        text = text.lstrip("=+@\t\r").strip()
+    return html.escape(text, quote=False)
 
 
 def _parse_price_value(raw_value: Any, row_num: int) -> Decimal:
@@ -310,17 +323,17 @@ class ProductService:
                         return row[original]
             return None
 
-        name = get_value("name")
-        sku = get_value("sku")
+        name = _sanitize_input_text(get_value("name"))
+        sku = _sanitize_input_text(get_value("sku"))
         price_raw = get_value("price")
         stock_raw = get_value("stock")
-        description = get_value("description") or ""
+        description = _sanitize_input_text(get_value("description") or "")
         category = get_value("category") or CategoryChoices.OTHER
         weight_raw = get_value("weight_kg", "weight", "weightkg")
 
-        if not name or str(name).strip() == "":
+        if not name or name.strip() == "":
             raise ValidationError(f"Missing name at row {row_num}")
-        if not sku or str(sku).strip() == "":
+        if not sku or sku.strip() == "":
             raise ValidationError(f"Missing sku at row {row_num}")
 
         price = _parse_price_value(price_raw, row_num)
@@ -333,9 +346,9 @@ class ProductService:
             category_upper = CategoryChoices.OTHER
 
         return {
-            "name": str(name).strip(),
-            "sku": str(sku).strip(),
-            "description": str(description).strip(),
+            "name": name,
+            "sku": sku,
+            "description": description,
             "category": category_upper,
             "price": price,
             "stock": stock,
