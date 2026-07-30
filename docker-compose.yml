@@ -19,12 +19,11 @@ services:
   web:
     build: .
     container_name: ecommerce_web
-    command: >
-      sh -c "python manage.py migrate &&
-             python manage.py seed --refresh || true &&
-             gunicorn config.wsgi:application --bind 0.0.0.0:8000 --reload"
+    entrypoint: ["/app/.docker/entrypoint.sh"]
     ports:
       - "8000:8000"
+    volumes:
+      - .:/app
     depends_on:
       db:
         condition: service_healthy

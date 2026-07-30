@@ -23,6 +23,7 @@ COPY package.json package-lock.json* ./
 RUN npm install
 
 COPY . .
+RUN chmod +x /app/.docker/entrypoint.sh
 
 RUN npx @tailwindcss/cli -i ./static/css/src/input.css -o ./static/css/dist/output.css --minify || echo '@import "tailwindcss";' > ./static/css/dist/output.css
 
@@ -30,4 +31,4 @@ RUN python manage.py collectstatic --noinput || true
 
 EXPOSE 8000
 
-CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]
+ENTRYPOINT ["/app/.docker/entrypoint.sh"]
