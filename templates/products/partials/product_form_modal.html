@@ -1,54 +1,74 @@
 <div data-modal class="fixed inset-0 z-50 flex items-center justify-center p-4">
     <div class="modal-backdrop absolute inset-0" onclick="document.getElementById('modal-container').innerHTML=''; document.body.style.overflow='';"></div>
-    <div class="relative w-full max-w-2xl animate-slide-in rounded-2xl bg-white shadow-2xl border border-zinc-200">
-        <div class="flex items-center justify-between border-b border-zinc-200 px-6 py-4">
-            <h2 class="text-lg font-semibold tracking-tight">{{ title }}</h2>
-            <button onclick="document.getElementById('modal-container').innerHTML=''; document.body.style.overflow='';" class="rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600">
+    <div class="relative w-full max-w-2xl animate-slide-in rounded-2xl bg-white shadow-2xl border border-zinc-200 overflow-hidden">
+        <div class="flex items-center justify-between border-b border-zinc-200 px-6 py-4 bg-zinc-50/50">
+            <div class="flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-900 text-white shadow-sm">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                </div>
+                <div>
+                    <h2 class="text-lg font-semibold tracking-tight text-zinc-900">{{ title }}</h2>
+                    <p class="text-xs text-zinc-500">Enter product information, inventory stats, and pricing</p>
+                </div>
+            </div>
+            <button onclick="document.getElementById('modal-container').innerHTML=''; document.body.style.overflow='';" class="rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 transition">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
         </div>
-        <form method="post" action="{% if action == 'create' %}/products/create/{% else %}/products/{{ product.id }}/edit/{% endif %}" hx-post="{% if action == 'create' %}/products/create/{% else %}/products/{{ product.id }}/edit/{% endif %}" hx-target="#product-table-container" hx-swap="innerHTML" class="p-6 space-y-4">
+        <form method="post" action="{% if action == 'create' %}/products/create/{% else %}/products/{{ product.id }}/edit/{% endif %}" hx-post="{% if action == 'create' %}/products/create/{% else %}/products/{{ product.id }}/edit/{% endif %}" hx-target="#product-table-container" hx-swap="innerHTML" class="p-6 space-y-6">
             {% csrf_token %}
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div class="sm:col-span-2">
-                    <label class="mb-1.5 block text-xs font-medium text-zinc-700">Name *</label>
-                    {{ form.name }}
-                    {% if form.name.errors %}<p class="mt-1 text-xs text-red-600">{{ form.name.errors.0 }}</p>{% endif %}
-                </div>
-                <div>
-                    <label class="mb-1.5 block text-xs font-medium text-zinc-700">SKU *</label>
-                    {{ form.sku }}
-                    {% if form.sku.errors %}<p class="mt-1 text-xs text-red-600">{{ form.sku.errors.0 }}</p>{% endif %}
-                </div>
-                <div>
-                    <label class="mb-1.5 block text-xs font-medium text-zinc-700">Category</label>
-                    {{ form.category }}
-                </div>
-                <div class="sm:col-span-2">
-                    <label class="mb-1.5 block text-xs font-medium text-zinc-700">Description</label>
-                    {{ form.description }}
-                </div>
-                <div>
-                    <label class="mb-1.5 block text-xs font-medium text-zinc-700">Price *</label>
-                    {{ form.price }}
-                    {% if form.price.errors %}<p class="mt-1 text-xs text-red-600">{{ form.price.errors.0 }}</p>{% endif %}
-                </div>
-                <div>
-                    <label class="mb-1.5 block text-xs font-medium text-zinc-700">Stock *</label>
-                    {{ form.stock }}
-                    {% if form.stock.errors %}<p class="mt-1 text-xs text-red-600">{{ form.stock.errors.0 }}</p>{% endif %}
-                </div>
-                <div class="sm:col-span-2">
-                    <label class="mb-1.5 block text-xs font-medium text-zinc-700">Weight (kg)</label>
-                    {{ form.weight_kg }}
+            
+            <div class="space-y-4">
+                <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-500">General Information</h3>
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div class="sm:col-span-2">
+                        <label class="mb-1.5 block text-xs font-medium text-zinc-800">Product Name <span class="text-red-500">*</span></label>
+                        {{ form.name }}
+                        {% if form.name.errors %}<p class="mt-1.5 text-xs text-red-600 font-medium">{{ form.name.errors.0 }}</p>{% endif %}
+                    </div>
+                    <div>
+                        <label class="mb-1.5 block text-xs font-medium text-zinc-800">SKU <span class="text-red-500">*</span></label>
+                        {{ form.sku }}
+                        {% if form.sku.errors %}<p class="mt-1.5 text-xs text-red-600 font-medium">{{ form.sku.errors.0 }}</p>{% endif %}
+                    </div>
+                    <div>
+                        <label class="mb-1.5 block text-xs font-medium text-zinc-800">Category</label>
+                        {{ form.category }}
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="mb-1.5 block text-xs font-medium text-zinc-800">Description</label>
+                        {{ form.description }}
+                    </div>
                 </div>
             </div>
+
+            <div class="space-y-4 pt-2 border-t border-zinc-100">
+                <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-500">Pricing & Inventory</h3>
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    <div>
+                        <label class="mb-1.5 block text-xs font-medium text-zinc-800">Price ($) <span class="text-red-500">*</span></label>
+                        {{ form.price }}
+                        {% if form.price.errors %}<p class="mt-1.5 text-xs text-red-600 font-medium">{{ form.price.errors.0 }}</p>{% endif %}
+                    </div>
+                    <div>
+                        <label class="mb-1.5 block text-xs font-medium text-zinc-800">Stock Quantity <span class="text-red-500">*</span></label>
+                        {{ form.stock }}
+                        {% if form.stock.errors %}<p class="mt-1.5 text-xs text-red-600 font-medium">{{ form.stock.errors.0 }}</p>{% endif %}
+                    </div>
+                    <div>
+                        <label class="mb-1.5 block text-xs font-medium text-zinc-800">Weight (kg)</label>
+                        {{ form.weight_kg }}
+                    </div>
+                </div>
+            </div>
+
             {% if form.non_field_errors %}
-            <div class="rounded-lg bg-red-50 p-3 text-xs text-red-700">{{ form.non_field_errors }}</div>
+            <div class="rounded-lg bg-red-50 p-3.5 text-xs text-red-700 font-medium border border-red-200">{{ form.non_field_errors }}</div>
             {% endif %}
-            <div class="flex justify-end gap-2 pt-4 border-t border-zinc-100">
-                <button type="button" onclick="document.getElementById('modal-container').innerHTML=''; document.body.style.overflow='';" class="rounded-lg border border-zinc-300 bg-white px-5 py-2.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50">Cancel</button>
-                <button type="submit" class="rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-800">{% if action == 'create' %}Create Product{% else %}Update Product{% endif %}</button>
+
+            <div class="flex items-center justify-end gap-3 pt-4 border-t border-zinc-100">
+                <button type="button" onclick="document.getElementById('modal-container').innerHTML=''; document.body.style.overflow='';" class="rounded-lg border border-zinc-300 bg-white px-5 py-2.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 transition">Cancel</button>
+                <button type="submit" class="rounded-lg bg-zinc-900 px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-zinc-800 transition">{% if action == 'create' %}Create Product{% else %}Save Changes{% endif %}</button>
             </div>
         </form>
     </div>

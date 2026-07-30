@@ -1,19 +1,25 @@
 from django import forms
 
+INPUT_CLASS = (
+    "w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2.5 text-sm "
+    "text-zinc-900 placeholder-zinc-400 shadow-sm focus:border-zinc-900 "
+    "focus:ring-1 focus:ring-zinc-900 focus:outline-none transition"
+)
+
 
 class CheckoutForm(forms.Form):
     customer_name = forms.CharField(
         max_length=255,
         label="Full Name",
         widget=forms.TextInput(
-            attrs={"class": "input-field", "placeholder": "John Doe", "required": True}
+            attrs={"class": INPUT_CLASS, "placeholder": "John Doe", "required": True}
         ),
     )
     customer_email = forms.EmailField(
         label="Email",
         widget=forms.EmailInput(
             attrs={
-                "class": "input-field",
+                "class": INPUT_CLASS,
                 "placeholder": "john@example.com",
                 "required": True,
             }
@@ -23,29 +29,27 @@ class CheckoutForm(forms.Form):
         min_value=1,
         initial=1,
         label="Quantity",
-        widget=forms.NumberInput(
-            attrs={"class": "input-field", "min": "1", "step": "1"}
-        ),
+        widget=forms.NumberInput(attrs={"class": INPUT_CLASS, "min": "1", "step": "1"}),
     )
     card_number = forms.CharField(
         max_length=19,
         label="Card Number",
         required=False,
         widget=forms.TextInput(
-            attrs={"class": "input-field", "placeholder": "4242 4242 4242 4242"}
+            attrs={"class": INPUT_CLASS, "placeholder": "4242 4242 4242 4242"}
         ),
     )
     card_expiry = forms.CharField(
         max_length=5,
         label="Expiry (MM/YY)",
         required=False,
-        widget=forms.TextInput(attrs={"class": "input-field", "placeholder": "12/30"}),
+        widget=forms.TextInput(attrs={"class": INPUT_CLASS, "placeholder": "12/30"}),
     )
     card_cvv = forms.CharField(
         max_length=4,
         label="CVV",
         required=False,
-        widget=forms.TextInput(attrs={"class": "input-field", "placeholder": "123"}),
+        widget=forms.TextInput(attrs={"class": INPUT_CLASS, "placeholder": "123"}),
     )
 
     def clean_quantity(self):

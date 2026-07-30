@@ -4,6 +4,12 @@ from django import forms
 
 from .models import CategoryChoices, Product
 
+INPUT_CLASS = (
+    "w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2.5 text-sm "
+    "text-zinc-900 placeholder-zinc-400 shadow-sm focus:border-zinc-900 "
+    "focus:ring-1 focus:ring-zinc-900 focus:outline-none transition"
+)
+
 
 class ProductForm(forms.ModelForm):
     class Meta:
@@ -19,23 +25,45 @@ class ProductForm(forms.ModelForm):
         ]
         widgets = {
             "name": forms.TextInput(
-                attrs={"class": "input-field", "placeholder": "Product name"}
+                attrs={
+                    "class": INPUT_CLASS,
+                    "placeholder": "e.g., Wireless Mechanical Keyboard",
+                }
             ),
             "sku": forms.TextInput(
-                attrs={"class": "input-field", "placeholder": "SKU-001"}
+                attrs={"class": INPUT_CLASS, "placeholder": "e.g., KB-001"}
             ),
             "description": forms.Textarea(
-                attrs={"class": "input-field", "rows": 3, "placeholder": "Description"}
+                attrs={
+                    "class": INPUT_CLASS,
+                    "rows": 3,
+                    "placeholder": "Enter product specs and features...",
+                }
             ),
-            "category": forms.Select(attrs={"class": "input-field"}),
+            "category": forms.Select(attrs={"class": INPUT_CLASS}),
             "price": forms.NumberInput(
-                attrs={"class": "input-field", "step": "0.01", "min": "0"}
+                attrs={
+                    "class": INPUT_CLASS,
+                    "step": "0.01",
+                    "min": "0",
+                    "placeholder": "0.00",
+                }
             ),
             "stock": forms.NumberInput(
-                attrs={"class": "input-field", "min": "0", "step": "1"}
+                attrs={
+                    "class": INPUT_CLASS,
+                    "min": "0",
+                    "step": "1",
+                    "placeholder": "0",
+                }
             ),
             "weight_kg": forms.NumberInput(
-                attrs={"class": "input-field", "step": "0.001", "min": "0"}
+                attrs={
+                    "class": INPUT_CLASS,
+                    "step": "0.001",
+                    "min": "0",
+                    "placeholder": "0.000",
+                }
             ),
         }
 
