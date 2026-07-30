@@ -77,6 +77,27 @@ def _parse_stock_value(raw_value: Any, row_num: int) -> int:
     return stock
 
 
+def _parse_weight_value(raw_value: Any) -> Decimal:
+    if raw_value is None:
+        return Decimal("0")
+
+    weight_str = str(raw_value).strip()
+    if not weight_str:
+        return Decimal("0")
+
+    cleaned = weight_str.replace(",", "").replace("$", "").strip()
+    match = re.search(r"-?\d+(\.\d+)?", cleaned)
+
+    if not match:
+        return Decimal("0")
+
+    try:
+        weight = Decimal(match.group(0))
+        return weight if weight >= 0 else Decimal("0")
+    except (InvalidOperation, ValueError, TypeError):
+        return Decimal("0")
+
+
 class ProductService:
 
     @staticmethod
@@ -289,16 +310,13 @@ class ProductService:
                         return row[original]
             return None
 
-        def get_raw(key):
-            return row.get(key.lower()) or row.get(key) or ""
-
         name = get_value("name")
         sku = get_value("sku")
         price_raw = get_value("price")
         stock_raw = get_value("stock")
         description = get_value("description") or ""
         category = get_value("category") or CategoryChoices.OTHER
-        weight_raw = get_value("weight_kg", "weight", "weightkg") or "0"
+        weight_raw = get_value("weight_kg", "weight", "weightkg")
 
         if not name or str(name).strip() == "":
             raise ValidationError(f"Missing name at row {row_num}")
@@ -307,21 +325,7 @@ class ProductService:
 
         price = _parse_price_value(price_raw, row_num)
         stock = _parse_stock_value(stock_raw, row_num)
-
-        try:
-            weight_str = str(weight_raw).strip() if weight_raw is not None else "0"
-            if weight_str == "":
-                weight_str = "0"
-            weight_str_clean = weight_str.replace(",", "").replace("$", "").strip()
-            match_w = re.search(r"-?\d+(\.\d+)?", weight_str_clean)
-            if match_w:
-                weight = Decimal(match_w.group(0))
-            else:
-                weight = Decimal("0")
-            if weight < 0:
-                weight = Decimal("0")
-        except (InvalidOperation, ValueError, TypeError):
-            weight = Decimal("0")
+        weight = _parse_weight_value(weight_raw)
 
         category_upper = str(category).upper().strip()
         valid_categories = [c[0] for c in CategoryChoices.choices]
