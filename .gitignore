@@ -1,3 +1,9 @@
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+.pytest_cache/
+.coverage
 /Code Challenge E-Commerce.csv
 /db.sqlite3
 /node_modules
