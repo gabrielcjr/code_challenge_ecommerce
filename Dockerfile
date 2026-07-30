@@ -25,7 +25,7 @@ RUN npm install
 COPY . .
 RUN chmod +x /app/.docker/entrypoint.sh
 
-RUN npx @tailwindcss/cli -i ./static/css/src/input.css -o ./static/css/dist/output.css --minify || echo '@import "tailwindcss";' > ./static/css/dist/output.css
+RUN mkdir -p ./static/css/dist && npx @tailwindcss/cli -i ./static/css/src/input.css -o ./static/css/dist/output.css --minify
 
 RUN python manage.py collectstatic --noinput || true
 

@@ -13,23 +13,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
       - name: Start Docker Compose
         run: |
           docker compose up -d --build
 
       - name: Run Linters
         run: |
-          make run-check-linters
+          docker compose exec -T web make run-check-linters
 
       - name: Run Tests
         run: |
