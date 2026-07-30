@@ -10,21 +10,6 @@ jobs:
   lint-and-test:
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:18-alpine
-        env:
-          POSTGRES_DB: ecommerce
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - uses: actions/checkout@v4
 
@@ -38,23 +23,21 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Check formatting with black
-        run: black --check . --config pyproject.toml
+      - name: Start Docker Compose
+        run: |
+          docker compose up -d --build
 
-      - name: Check imports with isort
-        run: isort . --check-only --settings-file pyproject.toml
+      - name: Run Linters
+        run: |
+          make run-check-linters
 
-      - name: Lint with flake8
-        run: flake8 . --config .flake8 --count --show-source --statistics
-
-      - name: Run migrations
-        run: python manage.py migrate
+      - name: Run Tests
+        run: |
+          docker compose exec -T web python manage.py test --verbosity=2
         env:
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432/ecommerce
           DJANGO_SECRET_KEY: test-secret-key-ci
 
-      - name: Run tests
-        run: python manage.py test --verbosity=2
-        env:
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432/ecommerce
-          DJANGO_SECRET_KEY: test-secret-key-ci
+      - name: Stop Docker Compose
+        if: always()
+        run: |
+          docker compose down
