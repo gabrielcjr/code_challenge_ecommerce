@@ -30,30 +30,35 @@ Database setup, migrations, and asset compilation run automatically inside Docke
 - **SPA UX without JS framework** Tailwind CSS v4 compiled via `@tailwindcss/cli`, HTMX 2 for fragment swaps
 - **Comprehensive Tests** unit + integration + E2E workflow tests
 
-## Architecture Decisions
+## Architecture & Technical Decisions
 
-### Service Layer Isolation
-Business logic isolated in `services.py`:
-- `ProductService.list_products()` handles filtering, trigram search fallback, pagination
-- `ProductService.import_products_from_csv()` atomic transaction, schema validation, upsert by SKU
-- `OrderService.create_and_process_order()` locks products via `select_for_update`, invokes `PaymentService`, creates order + items, decrements stock atomically
-- `PaymentService` simulates external gateway with optional failure mode
+### 1. Service Layer Pattern Isolation (`services.py`)
+- **Decision**: Decoupled core business rules from Django view controllers into dedicated domain service modules (`ProductService`, `OrderService`, `PaymentService`).
+- **Rationale**: Views remain thin and focused on HTTP/HTMX fragment rendering. Service methods can be executed, tested, and reused in isolation without HTTP request overhead.
 
-Thin views delegate to services and return HTML fragments for HTMX requests vs full pages.
+### 2. HTMX 2 Server-Driven SPA UX
+- **Decision**: Built a dynamic Single Page Application (SPA) UX using server-side HTML fragment rendering via HTMX 2 and Tailwind CSS v4, avoiding heavy JavaScript client frameworks (React/Next.js).
+- **Rationale**: Eliminates client-side state duplication, CORS complexity, and build tool chains while delivering an instantaneous, reactive SPA user experience.
 
-### HTMX Fragment Strategy
-- Base layout provides `#modal-container` and `#product-table-container`
-- Search form uses `hx-get` + `hx-trigger="change, keyup changed delay:300ms"` + `hx-target="#product-table-container"`
-- CRUD modals rendered via `hx-get` to modal endpoints, forms `hx-post` back to table container
-- Custom events `productCreated`, `productUpdated`, `csvImported` trigger toast + modal close
+### 3. PostgreSQL Trigram Search (`pg_trgm` + `GinIndex`) & Substring Fallback
+- **Decision**: Search prioritizes exact SKU and substring matches first (`icontains`), falling back to PostgreSQL trigram similarity (`similarity__gt=0.2`).
+- **Rationale**: Avoids the infrastructure complexity of ElasticSearch or Solr. Native PostgreSQL `pg_trgm` provides fast fuzzy typo matching while exact matching ensures exact SKU queries (e.g., `PRJ-001`) return precise single results.
 
-### PostgreSQL Optimization
-- `sku` db_index for fast lookup during CSV upsert
-- Trigram index via `GinIndex` with `gin_trgm_ops` would be added in migration when using PostgreSQL (fallback to `icontains` when `pg_trgm` unavailable or SQLite)
-- `select_for_update` in order service prevents race conditions
+### 4. Inventory Concurrency & Race Condition Defense (`select_for_update`)
+- **Decision**: Order creation and stock reduction run inside an atomic transaction (`transaction.atomic()`) with row-level locks (`select_for_update()`).
+- **Rationale**: Prevents inventory overselling and race conditions when multiple concurrent users purchase remaining stock items simultaneously.
 
-### No Code Comments Constraint
-Self-documenting code, clean naming, explicit service methods.
+### 5. Security & Input Sanitization Pipeline
+- **Decision**: CSV imports pass through `_sanitize_input_text()` to strip HTML tags (`strip_tags`) and leading formula characters (`=`, `+`, `@`, `\t`, `\r`).
+- **Rationale**: Protects against Cross-Site Scripting (XSS), CSV Formula Injection in Excel/Google Sheets, and SQL injection (via Django ORM parameterized queries).
+
+### 6. Containerization & CI Alignment
+- **Decision**: GitHub Actions CI workflow runs code linters (`make run-check-linters`) and test suites (`python manage.py test`) directly inside the Docker Compose container stack.
+- **Rationale**: Ensures 100% environment parity between local development, CI runner, and production deployments.
+
+### 7. No Code Comments Constraint
+- **Decision**: Enforced clean code principles with zero inline or block comments across all `.py`, `.html`, `.css`, `.js`, `.yml`, `Dockerfile`, and `Makefile` files.
+- **Rationale**: Ensures clear, self-documenting code with explicit variable and method naming.
 
 ## Project Structure
 
@@ -150,9 +155,11 @@ CI pipeline `.github/workflows/ci.yml` runs linters + tests against Postgres 18 
 - `/orders/` order list
 - `/orders/<txn_id>/` order detail
 
-## Sample CSV
+## Sample CSV & Evaluation Dataset
 
-`sample_products.csv` provides 10 products adhering to schema: name, sku, description, category, price, stock, weight_kg
+- **CSV Download Date**: **July 30, 2026**
+- **Provided Example File**: `Code Challenge E-Commerce.csv` (98 lines of evaluation test cases including currency formats, XSS payloads, SQL injection benchmarks, and whitespace validation).
+- **Sample Reference File**: `sample_products.csv` (10 clean product rows adhering to the required schema: name, sku, description, category, price, stock, weight_kg).
 
 ## Domain Models
 
