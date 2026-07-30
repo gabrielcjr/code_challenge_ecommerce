@@ -62,22 +62,22 @@ test-coverage:
 	USE_SQLITE_FOR_TESTS=1 coverage run --source='.' manage.py test && coverage report
 
 docker-build:
-	docker-compose build
+	docker compose build
 
 docker-up:
-	docker-compose up -d
+	docker compose up -d
 
 docker-down:
-	docker-compose down
+	docker compose down
 
 docker-logs:
-	docker-compose logs -f
+	docker compose logs -f
 
 docker-migrate:
-	docker-compose exec web python manage.py migrate
+	docker compose exec web python manage.py migrate
 
 docker-seed:
-	docker-compose exec web python manage.py seed --refresh
+	docker compose exec web python manage.py seed --refresh
 
 tailwind-init:
 	npm install

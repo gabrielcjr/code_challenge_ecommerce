@@ -1,6 +1,6 @@
 # Enterprise-Grade Django + HTMX E-Commerce SPA
 
-Enterprise-grade e-commerce application built with Python 3.13, Django 5.2, HTMX 2, Tailwind CSS v4, and PostgreSQL 18.
+Enterprise-grade e-commerce application built with Python 3.12, Django 5.2, HTMX 2, Tailwind CSS v4, and PostgreSQL 18.
 
 ## Features
 
@@ -55,7 +55,7 @@ static/
 ## Local Execution
 
 ### Prerequisites
-- Python 3.11+ (3.13 recommended)
+- Python 3.11+ (3.12 recommended)
 - PostgreSQL 18 (or SQLite fallback for tests via `USE_SQLITE_FOR_TESTS=1`)
 - Node.js 20 for Tailwind CLI (optional, CDN fallback in base.html)
 
