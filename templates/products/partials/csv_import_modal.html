@@ -18,9 +18,8 @@
         <form method="post" action="/products/import/" enctype="multipart/form-data" hx-post="/products/import/" hx-target="#modal-container" hx-encoding="multipart/form-data" class="p-6 space-y-4">
             {% csrf_token %}
             <label id="csv-drop-zone" for="csv-file-input" class="group relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-zinc-300 bg-zinc-50/50 p-8 text-center hover:border-zinc-900 hover:bg-zinc-50 transition cursor-pointer"
-                ondragover="event.preventDefault(); this.classList.add('border-zinc-900', 'bg-zinc-100');"
-                ondragleave="this.classList.remove('border-zinc-900', 'bg-zinc-100');"
-                ondrop="event.preventDefault(); this.classList.remove('border-zinc-900', 'bg-zinc-100'); if(event.dataTransfer.files.length) { const input = document.getElementById('csv-file-input'); input.files = event.dataTransfer.files; input.dispatchEvent(new Event('change')); }">
+                ondragover="event.preventDefault(); event.stopPropagation(); if(event.dataTransfer) event.dataTransfer.dropEffect = 'copy';"
+                ondrop="event.preventDefault(); event.stopPropagation(); if(event.dataTransfer && event.dataTransfer.files.length) { const input = document.getElementById('csv-file-input'); input.files = event.dataTransfer.files; input.dispatchEvent(new Event('change')); }">
                 <input type="file" id="csv-file-input" name="csv_file" accept=".csv" class="sr-only" onchange="const filename = this.files[0] ? this.files[0].name : ''; document.getElementById('selected-file-name').textContent = filename; document.getElementById('file-status-box').classList.toggle('hidden', !filename);">
                 <div class="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100 group-hover:bg-zinc-200 transition">
                     <svg class="h-6 w-6 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>

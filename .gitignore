@@ -10,3 +10,5 @@ __pycache__/
 /plan.md
 /sample_products.csv
 /static
+staticfiles/
+static/css/dist/

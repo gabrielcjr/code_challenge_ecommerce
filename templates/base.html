@@ -6,12 +6,11 @@
     <title>{% block title %}E-Commerce{% endblock %}</title>
     {% load static %}
     <link rel="stylesheet" href="{% static 'css/dist/output.css' %}">
-    <script src="https://cdn.tailwindcss.com"></script>
     <script src="{% static 'js/htmx.min.js' %}"></script>
     <style>
-        [hx-indicator] { opacity: 0; transition: opacity 200ms; }
-        .htmx-request [hx-indicator] { opacity: 1; }
-        .htmx-request.hx-indicator { opacity: 1; }
+        .htmx-indicator { opacity: 0; transition: opacity 200ms; pointer-events: none; }
+        .htmx-request .htmx-indicator { opacity: 1; }
+        .htmx-request.htmx-indicator { opacity: 1; }
         .modal-backdrop { backdrop-filter: blur(4px); background: rgba(0,0,0,0.4); }
         .animate-slide-in { animation: slideIn 0.3s ease-out; }
         @keyframes slideIn { from { transform: translateY(-10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -103,6 +102,8 @@
                 document.body.style.overflow = '';
             }
         });
+        window.addEventListener('dragover', function(e) { e.preventDefault(); }, false);
+        window.addEventListener('drop', function(e) { e.preventDefault(); }, false);
     </script>
     {% block extra_js %}{% endblock %}
 </body>
