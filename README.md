@@ -2,6 +2,25 @@
 
 Enterprise-grade e-commerce application built with Python 3.12, Django 5.2, HTMX 2, Tailwind CSS v4, and PostgreSQL 18.
 
+## Quickstart
+
+To launch the complete application with a single command:
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/gabrielcjr/code_challenge_ecommerce.git
+cd code_challenge_ecommerce
+
+# 2. Copy environment settings
+cp .env.example .env
+
+# 3. Launch with Docker Compose
+docker compose up -d --build
+```
+
+Access the application in your browser at **[http://localhost:8000/](http://localhost:8000/)**.
+Database setup, migrations, and asset compilation run automatically inside Docker!
+
 ## Features
 
 - **Product CRUD** via HTMX modals with server-side fragment rendering

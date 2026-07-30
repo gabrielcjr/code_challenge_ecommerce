@@ -65,6 +65,29 @@ class ProductServiceTest(TestCase):
         self.assertEqual(result["total"], 1)
         self.assertEqual(result["products"][0].sku, "TEST-001")
 
+    def test_list_products_exact_sku_search_precision(self):
+        Product.objects.create(
+            name="Protein Powder",
+            sku="PP-012",
+            description="Whey protein isolate",
+            category=CategoryChoices.OTHER,
+            price=Decimal("34.99"),
+            stock=400,
+            weight_kg=Decimal("2.0"),
+        )
+        Product.objects.create(
+            name="Mini Projector",
+            sku="PRJ-001",
+            description="1080p Portable projector",
+            category=CategoryChoices.ELECTRONICS,
+            price=Decimal("199.99"),
+            stock=30,
+            weight_kg=Decimal("1.2"),
+        )
+        result = ProductService.list_products(query="PRJ-001")
+        self.assertEqual(result["total"], 1)
+        self.assertEqual(result["products"][0].sku, "PRJ-001")
+
     def test_list_products_category_filter(self):
         Product.objects.create(
             name="Book Item",
