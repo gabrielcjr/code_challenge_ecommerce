@@ -128,34 +128,35 @@ class ProductService:
 
         has_trigram = False
         if query:
+            query_clean = str(query).strip()
             base_q = (
-                Q(name__icontains=query)
-                | Q(description__icontains=query)
-                | Q(sku__icontains=query)
+                Q(name__icontains=query_clean)
+                | Q(sku__icontains=query_clean)
+                | Q(description__icontains=query_clean)
             )
-            queryset = queryset.filter(base_q)
-            try:
-                from django.db import connection
-
-                is_postgres = connection.vendor == "postgresql"
-            except Exception:
-                is_postgres = False
-
-            if is_postgres:
+            exact_qs = queryset.filter(base_q)
+            if exact_qs.exists():
+                queryset = exact_qs
+            else:
                 try:
-                    from django.contrib.postgres.search import TrigramSimilarity
+                    from django.db import connection
 
-                    queryset = (
-                        Product.objects.annotate(
-                            similarity=TrigramSimilarity("name", query)
-                            + TrigramSimilarity("description", query)
+                    if connection.vendor == "postgresql":
+                        from django.contrib.postgres.search import TrigramSimilarity
+
+                        queryset = (
+                            Product.objects.annotate(
+                                similarity=TrigramSimilarity("name", query_clean)
+                                + TrigramSimilarity("description", query_clean)
+                            )
+                            .filter(similarity__gt=0.2)
+                            .order_by("-similarity", sort_by)
                         )
-                        .filter(Q(similarity__gt=0.1) | base_q)
-                        .order_by("-similarity", sort_by)
-                    )
-                    has_trigram = True
+                        has_trigram = True
+                    else:
+                        queryset = exact_qs
                 except Exception:
-                    queryset = Product.objects.filter(base_q)
+                    queryset = exact_qs
 
         if category:
             queryset = queryset.filter(category=category)

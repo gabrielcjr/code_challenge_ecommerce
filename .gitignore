@@ -9,6 +9,6 @@ __pycache__/
 /node_modules
 /plan.md
 /sample_products.csv
-/static
+.env
 staticfiles/
 static/css/dist/
