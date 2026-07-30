@@ -1,0 +1,26 @@
+<div data-modal class="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="modal-backdrop absolute inset-0" onclick="document.getElementById('modal-container').innerHTML=''; document.body.style.overflow='';"></div>
+    <div class="relative w-full max-w-lg animate-slide-in rounded-2xl bg-white shadow-2xl border border-zinc-200">
+        <div class="flex items-center justify-between border-b border-zinc-200 px-6 py-4">
+            <h2 class="text-lg font-semibold tracking-tight">{{ product.name }}</h2>
+            <button onclick="document.getElementById('modal-container').innerHTML=''; document.body.style.overflow='';" class="rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"><svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+        </div>
+        <div class="p-6 space-y-4">
+            <div class="flex gap-3">
+                <span class="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium">{{ product.category }}</span>
+                <span class="rounded bg-zinc-900 px-2 py-1 text-xs font-mono text-white">{{ product.sku }}</span>
+            </div>
+            <p class="text-sm text-zinc-600">{{ product.description }}</p>
+            <div class="grid grid-cols-2 gap-4 rounded-lg bg-zinc-50 p-4">
+                <div><div class="text-xs text-zinc-500">Price</div><div class="font-semibold">${{ product.price }}</div></div>
+                <div><div class="text-xs text-zinc-500">Stock</div><div class="font-semibold">{{ product.stock }}</div></div>
+                <div><div class="text-xs text-zinc-500">Weight</div><div class="font-semibold">{{ product.weight_kg }} kg</div></div>
+                <div><div class="text-xs text-zinc-500">Created</div><div class="font-semibold text-xs">{{ product.created_at|date:"M d, Y" }}</div></div>
+            </div>
+            <div class="flex gap-2">
+                <button hx-get="/products/{{ product.id }}/edit/modal/" hx-target="#modal-container" class="flex-1 rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium hover:bg-zinc-50">Edit</button>
+                <button hx-get="/orders/checkout/{{ product.id }}/modal/" hx-target="#modal-container" class="flex-1 rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-zinc-800" {% if product.stock == 0 %}disabled{% endif %}>Buy Now</button>
+            </div>
+        </div>
+    </div>
+</div>

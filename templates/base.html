@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}E-Commerce{% endblock %}</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/dist/output.css' %}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="{% static 'js/htmx.min.js' %}"></script>
+    <style>
+        [hx-indicator] { opacity: 0; transition: opacity 200ms; }
+        .htmx-request [hx-indicator] { opacity: 1; }
+        .htmx-request.hx-indicator { opacity: 1; }
+        .modal-backdrop { backdrop-filter: blur(4px); background: rgba(0,0,0,0.4); }
+        .animate-slide-in { animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { transform: translateY(-10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="min-h-screen bg-zinc-50 text-zinc-900 antialiased" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+    <header class="sticky top-0 z-30 border-b border-zinc-200 bg-white/80 backdrop-blur">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div class="flex h-16 items-center justify-between">
+                <div class="flex items-center gap-8">
+                    <a href="/" class="flex items-center gap-2">
+                        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-900 text-white font-bold">E</div>
+                        <span class="text-lg font-semibold tracking-tight">Enterprise Shop</span>
+                    </a>
+                    <nav class="hidden md:flex items-center gap-1">
+                        <a href="/" class="rounded-lg px-3 py-2 text-sm font-medium bg-zinc-900 text-white">Products</a>
+                        <a href="/orders/" class="rounded-lg px-3 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900">Orders</a>
+                    </nav>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button hx-get="/products/create/modal/" hx-target="#modal-container" hx-swap="innerHTML" class="inline-flex items-center gap-2 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 transition">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                        New Product
+                    </button>
+                    <button hx-get="/products/import/modal/" hx-target="#modal-container" hx-swap="innerHTML" class="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Import CSV
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        {% if messages %}
+        <div id="toast-container" class="fixed top-20 right-4 z-50 flex flex-col gap-2">
+            {% for message in messages %}
+            <div class="animate-slide-in rounded-lg border bg-white px-4 py-3 shadow-lg text-sm {% if message.tags == 'error' %}border-red-200 bg-red-50 text-red-800{% else %}border-zinc-200 text-zinc-800{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <div id="modal-container"></div>
+    <div id="toast-stack" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
+
+    <script>
+        document.body.addEventListener('htmx:afterSwap', function(e) {
+            if (e.detail.target.id === 'modal-container' && e.detail.target.innerHTML.trim() !== '') {
+                document.getElementById('modal-container').querySelector('[data-modal]')?.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            }
+        });
+        document.body.addEventListener('closeModal', function() {
+            document.getElementById('modal-container').innerHTML = '';
+            document.body.style.overflow = '';
+        });
+        document.body.addEventListener('productCreated', function() {
+            document.getElementById('modal-container').innerHTML = '';
+            document.body.style.overflow = '';
+            showToast('Product created successfully', 'success');
+        });
+        document.body.addEventListener('productUpdated', function() {
+            document.getElementById('modal-container').innerHTML = '';
+            document.body.style.overflow = '';
+            showToast('Product updated successfully', 'success');
+        });
+        document.body.addEventListener('csvImported', function() {
+            document.getElementById('modal-container').innerHTML = '';
+            document.body.style.overflow = '';
+            showToast('CSV imported successfully', 'success');
+        });
+        function showToast(msg, type) {
+            const stack = document.getElementById('toast-stack');
+            const el = document.createElement('div');
+            el.className = 'animate-slide-in rounded-lg border bg-white px-4 py-3 shadow-lg text-sm ' + (type==='error' ? 'border-red-200 bg-red-50 text-red-800' : 'border-zinc-200');
+            el.textContent = msg;
+            stack.appendChild(el);
+            setTimeout(() => el.remove(), 4000);
+        }
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.getElementById('modal-container').innerHTML = '';
+                document.body.style.overflow = '';
+            }
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

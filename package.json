@@ -1,0 +1,12 @@
+{
+  "name": "ecommerce-tailwind",
+  "private": true,
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.0.0",
+    "tailwindcss": "^4.0.0"
+  },
+  "scripts": {
+    "build": "npx @tailwindcss/cli -i ./static/css/src/input.css -o ./static/css/dist/output.css --minify",
+    "watch": "npx @tailwindcss/cli -i ./static/css/src/input.css -o ./static/css/dist/output.css --watch"
+  }
+}

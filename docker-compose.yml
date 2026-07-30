@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:18-alpine
+    container_name: ecommerce_db
+    environment:
+      POSTGRES_DB: ecommerce
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    container_name: ecommerce_web
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py seed --refresh || true &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8000 --reload"
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/ecommerce
+      DJANGO_SETTINGS_MODULE: config.settings
+      PYTHONPATH: /app
+
+volumes:
+  postgres_data:

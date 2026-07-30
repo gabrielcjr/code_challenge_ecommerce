@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Orders - Enterprise Shop{% endblock %}
+{% block content %}
+<div class="space-y-6">
+    <div>
+        <h1 class="text-2xl font-bold tracking-tight">Orders</h1>
+        <p class="mt-1 text-sm text-zinc-600">Transaction history with simulated payment gateway.</p>
+    </div>
+
+    <div class="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
+        <div class="border-b border-zinc-200 p-4 flex gap-4">
+            <form method="get" class="flex gap-2">
+                <input type="text" name="email" value="{{ filter_email|default:'' }}" placeholder="Filter by customer email" class="rounded-lg border border-zinc-300 px-3 py-2 text-sm w-64 focus:border-zinc-900 focus:outline-none">
+                <button type="submit" class="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white">Filter</button>
+                {% if filter_email %}<a href="/orders/" class="rounded-lg border px-4 py-2 text-sm">Clear</a>{% endif %}
+            </form>
+        </div>
+
+        {% if orders %}
+        <table class="w-full text-left text-sm">
+            <thead class="bg-zinc-50 text-xs uppercase text-zinc-500">
+                <tr>
+                    <th class="px-6 py-3">Transaction ID</th>
+                    <th class="px-6 py-3">Customer</th>
+                    <th class="px-6 py-3">Items</th>
+                    <th class="px-6 py-3">Total</th>
+                    <th class="px-6 py-3">Status</th>
+                    <th class="px-6 py-3">Date</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-zinc-100">
+                {% for order in orders %}
+                <tr class="hover:bg-zinc-50">
+                    <td class="px-6 py-4 font-mono text-xs">{{ order.transaction_id|truncatechars:20 }}</td>
+                    <td class="px-6 py-4">
+                        <div class="font-medium">{{ order.customer_name }}</div>
+                        <div class="text-xs text-zinc-500">{{ order.customer_email }}</div>
+                    </td>
+                    <td class="px-6 py-4 text-xs">{{ order.items.count }} items</td>
+                    <td class="px-6 py-4 font-semibold">${{ order.total_amount }}</td>
+                    <td class="px-6 py-4"><span class="rounded-full px-2.5 py-1 text-xs {% if order.payment_status == 'PAID' %}bg-green-50 text-green-700{% elif order.payment_status == 'FAILED' %}bg-red-50 text-red-700{% else %}bg-amber-50 text-amber-700{% endif %}">{{ order.payment_status }}</span></td>
+                    <td class="px-6 py-4 text-xs text-zinc-500">{{ order.created_at|date:"M d, Y H:i" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="p-12 text-center text-sm text-zinc-500">No orders found.</div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,93 @@
+<div data-modal class="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="modal-backdrop absolute inset-0" onclick="document.getElementById('modal-container').innerHTML=''; document.body.style.overflow='';"></div>
+    <div class="relative w-full max-w-lg animate-slide-in rounded-2xl bg-white shadow-2xl border border-zinc-200">
+        <div class="flex items-center justify-between border-b border-zinc-200 px-6 py-4">
+            <h2 class="text-lg font-semibold tracking-tight">Checkout</h2>
+            <button onclick="document.getElementById('modal-container').innerHTML=''; document.body.style.overflow='';" class="rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"><svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+        </div>
+        <div class="p-6">
+            <div class="mb-6 flex gap-4 rounded-xl bg-zinc-50 p-4 border border-zinc-200">
+                <div class="h-16 w-16 rounded-lg bg-white border flex items-center justify-center text-zinc-400">
+                    <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10m0-10L4 7"/></svg>
+                </div>
+                <div class="flex-1">
+                    <div class="font-medium">{{ product.name }}</div>
+                    <div class="text-xs text-zinc-500 font-mono">{{ product.sku }} • {{ product.category }}</div>
+                    <div class="mt-1 flex items-center gap-3">
+                        <span class="font-bold">${{ product.price }}</span>
+                        <span class="text-xs rounded-full bg-white border px-2 py-0.5 {% if product.stock > 0 %}text-green-700{% else %}text-red-700{% endif %}">{{ product.stock }} in stock</span>
+                    </div>
+                </div>
+            </div>
+
+            {% if error_message %}
+            <div class="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">{{ error_message }}</div>
+            {% endif %}
+
+            <form method="post" action="/orders/checkout/{{ product.id }}/" hx-post="/orders/checkout/{{ product.id }}/" hx-target="#modal-container" hx-swap="innerHTML" class="space-y-4">
+                {% csrf_token %}
+                <div class="grid grid-cols-1 gap-4">
+                    <div>
+                        <label class="mb-1.5 block text-xs font-medium text-zinc-700">Full Name *</label>
+                        <input type="text" name="customer_name" value="{{ form.customer_name.value|default:'' }}" required class="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 focus:outline-none" placeholder="John Doe">
+                        {% if form.customer_name.errors %}<p class="mt-1 text-xs text-red-600">{{ form.customer_name.errors.0 }}</p>{% endif %}
+                    </div>
+                    <div>
+                        <label class="mb-1.5 block text-xs font-medium text-zinc-700">Email *</label>
+                        <input type="email" name="customer_email" value="{{ form.customer_email.value|default:'' }}" required class="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 focus:outline-none" placeholder="john@example.com">
+                        {% if form.customer_email.errors %}<p class="mt-1 text-xs text-red-600">{{ form.customer_email.errors.0 }}</p>{% endif %}
+                    </div>
+                    <div>
+                        <label class="mb-1.5 block text-xs font-medium text-zinc-700">Quantity *</label>
+                        <div class="flex items-center gap-2">
+                            <input type="number" name="quantity" id="qty-input" value="{{ form.quantity.value|default:1 }}" min="1" max="{{ product.stock }}" required class="w-24 rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 focus:outline-none">
+                            <span class="text-xs text-zinc-500">× ${{ product.price }} = <span id="total-preview" class="font-semibold text-zinc-900">${{ product.price }}</span></span>
+                        </div>
+                        {% if form.quantity.errors %}<p class="mt-1 text-xs text-red-600">{{ form.quantity.errors.0 }}</p>{% endif %}
+                    </div>
+
+                    <div class="rounded-lg border border-zinc-200 bg-zinc-50 p-4 space-y-3">
+                        <div class="text-xs font-semibold uppercase tracking-wider text-zinc-500">Payment Simulation</div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="col-span-2">
+                                <label class="mb-1 block text-[11px] text-zinc-600">Card Number (simulated)</label>
+                                <input type="text" name="card_number" value="4242 4242 4242 4242" placeholder="4242 4242 4242 4242" class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-mono">
+                            </div>
+                            <div>
+                                <label class="mb-1 block text-[11px] text-zinc-600">Expiry</label>
+                                <input type="text" name="card_expiry" value="12/30" placeholder="12/30" class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-mono">
+                            </div>
+                            <div>
+                                <label class="mb-1 block text-[11px] text-zinc-600">CVV</label>
+                                <input type="text" name="card_cvv" value="123" placeholder="123" class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-mono">
+                            </div>
+                        </div>
+                        <p class="text-[11px] text-zinc-500">This is a simulated payment engine. No real charges occur. 5% random failure rate simulates gateway declines.</p>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-4 border-t border-zinc-100">
+                    <button type="button" onclick="document.getElementById('modal-container').innerHTML=''; document.body.style.overflow='';" class="rounded-lg border border-zinc-300 bg-white px-5 py-2.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50">Cancel</button>
+                    <button type="submit" class="rounded-lg bg-zinc-900 px-6 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 flex items-center gap-2">
+                        <span>Pay Now</span>
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                    </button>
+                </div>
+            </form>
+
+            <script>
+                (function() {
+                    const qty = document.getElementById('qty-input');
+                    const totalEl = document.getElementById('total-preview');
+                    const unit = parseFloat('{{ product.price }}');
+                    function update() {
+                        const q = parseInt(qty.value) || 1;
+                        totalEl.textContent = '$' + (unit * q).toFixed(2);
+                    }
+                    qty && qty.addEventListener('input', update);
+                    update();
+                })();
+            </script>
+        </div>
+    </div>
+</div>

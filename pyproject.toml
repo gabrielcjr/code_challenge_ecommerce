@@ -1,0 +1,28 @@
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+exclude = '''
+/(
+    \.git
+  | \.venv
+  | venv
+  | migrations
+  | static\/css\/dist
+  | node_modules
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 88
+src_paths = ["."]
+skip = [".venv", "venv", "migrations", "static"]
+known_first_party = ["config", "apps"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["test_*.py", "tests.py"]
+addopts = "--ds=config.settings"
+
+[build-system]
+requires = ["setuptools", "wheel"]

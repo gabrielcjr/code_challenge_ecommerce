@@ -1,0 +1,39 @@
+<div data-modal class="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="modal-backdrop absolute inset-0" onclick="document.getElementById('modal-container').innerHTML=''; document.body.style.overflow='';"></div>
+    <div class="relative w-full max-w-lg animate-slide-in rounded-2xl bg-white shadow-2xl border border-zinc-200">
+        <div class="flex items-center justify-between border-b border-zinc-200 px-6 py-4">
+            <h2 class="text-lg font-semibold tracking-tight">Import Products from CSV</h2>
+            <button onclick="document.getElementById('modal-container').innerHTML=''; document.body.style.overflow='';" class="rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <form method="post" action="/products/import/" enctype="multipart/form-data" hx-post="/products/import/" hx-target="#modal-container" hx-encoding="multipart/form-data" class="p-6 space-y-4">
+            {% csrf_token %}
+            <div class="rounded-lg border-2 border-dashed border-zinc-200 p-8 text-center hover:border-zinc-300 transition">
+                <div class="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100">
+                    <svg class="h-5 w-5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                </div>
+                <div class="mt-3">
+                    <label class="text-sm font-medium text-zinc-900">Upload CSV file</label>
+                    <p class="mt-1 text-xs text-zinc-500">Required: name, sku, price, stock. Optional: description, category, weight_kg</p>
+                </div>
+                <div class="mt-4">
+                    {{ form.csv_file }}
+                </div>
+                {% if form.csv_file.errors %}<p class="mt-2 text-xs text-red-600">{{ form.csv_file.errors.0 }}</p>{% endif %}
+            </div>
+            <div class="rounded-lg bg-zinc-50 p-4">
+                <p class="text-xs font-medium text-zinc-700">CSV Format Example:</p>
+                <pre class="mt-2 overflow-x-auto rounded bg-white p-2 text-[11px] font-mono border">name,sku,description,category,price,stock,weight_kg
+"Laptop", "LT-001", "Gaming", "ELECTRONICS", "1200.00", "15", "2.5"</pre>
+            </div>
+            {% if form.non_field_errors %}
+            <div class="rounded-lg bg-red-50 p-3 text-xs text-red-700">{{ form.non_field_errors }}</div>
+            {% endif %}
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="document.getElementById('modal-container').innerHTML=''; document.body.style.overflow='';" class="rounded-lg border border-zinc-300 bg-white px-5 py-2.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50">Cancel</button>
+                <button type="submit" class="rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-800">Import CSV</button>
+            </div>
+        </form>
+    </div>
+</div>
