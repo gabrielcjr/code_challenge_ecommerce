@@ -250,10 +250,8 @@ class ProductService:
             return
 
         skus = [parsed["sku"] for parsed in batch]
-        existing_map = {
-            product.sku: product
-            for product in Product.objects.filter(sku__in=skus).only("id", *PRODUCT_FIELDS)
-        }
+        stored = Product.objects.filter(sku__in=skus).only("id", *PRODUCT_FIELDS)
+        existing_map = {product.sku: product for product in stored}
 
         to_create = []
         to_update = []

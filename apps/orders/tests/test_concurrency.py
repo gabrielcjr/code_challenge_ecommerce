@@ -61,9 +61,7 @@ class InventoryConcurrencyTest(TransactionTestCase):
         self.assertEqual(len(accepted), 10)
         self.assertEqual(len(rejected), 10)
         self.assertEqual(self.product.stock, 0)
-        self.assertTrue(
-            all("Insufficient stock" in message for _, message in rejected)
-        )
+        self.assertTrue(all("Insufficient stock" in message for _, message in rejected))
 
     def test_stock_never_goes_negative_with_uneven_quantities(self):
         quantities = [4, 3, 3, 5, 2, 6, 1, 4]
@@ -104,7 +102,8 @@ class InventoryConcurrencyTest(TransactionTestCase):
         sold = sum(paid_items.values_list("quantity", flat=True))
 
         self.assertEqual(sold, 10 - self.product.stock)
-        self.assertEqual(Order.objects.filter(payment_status=PaymentStatus.PAID).count(), 5)
+        paid_orders = Order.objects.filter(payment_status=PaymentStatus.PAID)
+        self.assertEqual(paid_orders.count(), 5)
 
     def test_multi_product_orders_do_not_deadlock(self):
         second = Product.objects.create(
@@ -175,9 +174,7 @@ class InventoryConcurrencyTest(TransactionTestCase):
 
         def waiting_buyer():
             first_locked.wait(timeout=10)
-            observed["result"] = _purchase(
-                self.product.id, 5, "waiter@example.com"
-            )
+            observed["result"] = _purchase(self.product.id, 5, "waiter@example.com")
 
         holder = threading.Thread(target=slow_buyer)
         waiter = threading.Thread(target=waiting_buyer)

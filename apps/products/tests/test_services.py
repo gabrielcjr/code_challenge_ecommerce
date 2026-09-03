@@ -266,10 +266,8 @@ class CSVImportMemoryTest(TestCase):
         self.assertEqual(result["error_count"], MAX_REPORTED_ERRORS)
 
     def test_import_upserts_existing_rows_in_bulk(self):
-        self.assertEqual(
-            ProductService.import_products_from_csv(self._uploaded_file(600))["created"],
-            600,
-        )
+        seeded = ProductService.import_products_from_csv(self._uploaded_file(600))
+        self.assertEqual(seeded["created"], 600)
 
         result = ProductService.import_products_from_csv(self._uploaded_file(600))
 
