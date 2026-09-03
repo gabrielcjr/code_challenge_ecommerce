@@ -77,7 +77,11 @@ class OrderService:
         product_ids = [item["product_id"] for item in items_data]
 
         with transaction.atomic():
-            products = Product.objects.select_for_update().filter(id__in=product_ids)
+            products = (
+                Product.objects.select_for_update()
+                .filter(id__in=product_ids)
+                .order_by("id")
+            )
             product_map = {p.id: p for p in products}
 
             if len(product_map) != len(set(product_ids)):
@@ -186,7 +190,6 @@ class OrderService:
         return queryset
 
     @staticmethod
-    @transaction.atomic
     def single_product_purchase(
         product_id: int, quantity: int, customer_info: Dict[str, Any]
     ) -> Order:
