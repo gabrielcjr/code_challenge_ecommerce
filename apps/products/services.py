@@ -13,6 +13,18 @@ from django.utils.html import strip_tags
 
 from .models import CategoryChoices, Product
 
+CSV_BATCH_SIZE = 500
+MAX_REPORTED_ERRORS = 200
+PRODUCT_FIELDS = [
+    "name",
+    "sku",
+    "description",
+    "category",
+    "price",
+    "stock",
+    "weight_kg",
+]
+
 
 def _sanitize_input_text(val: Any) -> str:
     if val is None:
@@ -227,87 +239,136 @@ class ProductService:
         Product.objects.filter(id=product_id).delete()
 
     @staticmethod
-    @transaction.atomic
-    def import_products_from_csv(csv_file) -> Dict[str, Any]:
-        content = csv_file.read().decode("utf-8")
-        if not content.strip():
-            raise ValidationError("CSV file is empty")
+    def _open_csv_stream(csv_file):
+        if hasattr(csv_file, "seekable") and csv_file.seekable():
+            csv_file.seek(0)
+        return io.TextIOWrapper(csv_file, encoding="utf-8", newline="")
 
-        reader = csv.DictReader(io.StringIO(content))
-        required_fields = {"name", "sku", "price", "stock"}
+    @staticmethod
+    def _flush_batch(batch, counters, errors):
+        if not batch:
+            return
+
+        skus = [parsed["sku"] for parsed in batch]
+        existing_map = {
+            product.sku: product
+            for product in Product.objects.filter(sku__in=skus).only("id", *PRODUCT_FIELDS)
+        }
+
+        to_create = []
+        to_update = []
+
+        for row_num, parsed in zip(counters["rows"], batch):
+            product = existing_map.get(parsed["sku"])
+            if product is None:
+                product = Product(**parsed)
+            else:
+                for key, value in parsed.items():
+                    setattr(product, key, value)
+
+            try:
+                product.full_clean(validate_unique=False)
+            except ValidationError as exc:
+                ProductService._record_error(
+                    errors,
+                    row_num,
+                    parsed["sku"],
+                    "; ".join(
+                        f"{field}: {', '.join(msgs)}"
+                        for field, msgs in exc.message_dict.items()
+                    ),
+                )
+                continue
+
+            if product.pk is None:
+                to_create.append(product)
+            else:
+                to_update.append(product)
+
+        with transaction.atomic():
+            if to_create:
+                Product.objects.bulk_create(to_create, batch_size=CSV_BATCH_SIZE)
+            if to_update:
+                Product.objects.bulk_update(
+                    to_update, PRODUCT_FIELDS, batch_size=CSV_BATCH_SIZE
+                )
+
+        counters["created"] += len(to_create)
+        counters["updated"] += len(to_update)
+        batch.clear()
+        counters["rows"].clear()
+
+    @staticmethod
+    def import_products_from_csv(csv_file) -> Dict[str, Any]:
+        stream = ProductService._open_csv_stream(csv_file)
+        reader = csv.DictReader(stream)
 
         if reader.fieldnames is None:
-            raise ValidationError("Invalid CSV format")
+            raise ValidationError("CSV file is empty")
 
-        normalized_fields = {f.strip().lower() for f in reader.fieldnames}
-        missing = required_fields - normalized_fields
+        normalized_fields = {
+            (f or "").strip().lower() for f in reader.fieldnames if f is not None
+        }
+        missing = {"name", "sku", "price", "stock"} - normalized_fields
         if missing:
-            raise ValidationError(f"Missing required fields: {', '.join(missing)}")
+            raise ValidationError(
+                f"Missing required fields: {', '.join(sorted(missing))}"
+            )
 
-        field_mapping = {f.lower(): f for f in reader.fieldnames}
+        field_mapping = {f.lower(): f for f in reader.fieldnames if f is not None}
 
-        results: List[Dict[str, Any]] = []
+        counters = {"created": 0, "updated": 0, "rows": []}
         errors: List[Dict[str, Any]] = []
-        created_count = 0
-        updated_count = 0
+        batch: List[Dict[str, Any]] = []
+        seen_skus = set()
+        row_count = 0
 
         for row_num, raw_row in enumerate(reader, start=2):
+            row_count += 1
             row = {
-                k.lower().strip(): (v.strip() if isinstance(v, str) else v)
+                (k or "").lower().strip(): (v.strip() if isinstance(v, str) else v)
                 for k, v in raw_row.items()
             }
 
             try:
                 parsed = ProductService._parse_csv_row(row, field_mapping, row_num)
             except ValidationError as exc:
-                errors.append(
-                    {"row": row_num, "data": raw_row, "error": str(exc.message)}
-                )
+                ProductService._record_error(errors, row_num, None, str(exc.message))
                 continue
             except Exception as exc:
-                errors.append({"row": row_num, "data": raw_row, "error": str(exc)})
+                ProductService._record_error(errors, row_num, None, str(exc))
                 continue
 
-            sku = parsed["sku"]
-            existing = Product.objects.filter(sku=sku).first()
+            if parsed["sku"] in seen_skus:
+                ProductService._flush_batch(batch, counters, errors)
+                seen_skus.clear()
 
-            try:
-                if existing:
-                    for key, value in parsed.items():
-                        setattr(existing, key, value)
-                    existing.full_clean()
-                    existing.save()
-                    updated_count += 1
-                    results.append({"row": row_num, "sku": sku, "action": "updated"})
-                else:
-                    product = Product(**parsed)
-                    product.full_clean()
-                    product.save()
-                    created_count += 1
-                    results.append({"row": row_num, "sku": sku, "action": "created"})
-            except ValidationError as exc:
-                errors.append(
-                    {
-                        "row": row_num,
-                        "data": raw_row,
-                        "error": "; ".join(
-                            [
-                                f"{k}: {', '.join(v)}"
-                                for k, v in exc.message_dict.items()
-                            ]
-                        ),
-                    }
-                )
-            except Exception as exc:
-                errors.append({"row": row_num, "data": raw_row, "error": str(exc)})
+            seen_skus.add(parsed["sku"])
+            batch.append(parsed)
+            counters["rows"].append(row_num)
+
+            if len(batch) >= CSV_BATCH_SIZE:
+                ProductService._flush_batch(batch, counters, errors)
+                seen_skus.clear()
+
+        ProductService._flush_batch(batch, counters, errors)
+
+        if row_count == 0:
+            raise ValidationError("CSV file is empty")
 
         return {
-            "created": created_count,
-            "updated": updated_count,
+            "created": counters["created"],
+            "updated": counters["updated"],
             "errors": errors,
-            "results": results,
-            "total_processed": created_count + updated_count + len(errors),
+            "error_count": len(errors),
+            "results": [],
+            "total_processed": counters["created"] + counters["updated"] + len(errors),
         }
+
+    @staticmethod
+    def _record_error(errors, row_num, sku, message):
+        if len(errors) < MAX_REPORTED_ERRORS:
+            errors.append({"row": row_num, "sku": sku, "error": message})
 
     @staticmethod
     def _parse_csv_row(

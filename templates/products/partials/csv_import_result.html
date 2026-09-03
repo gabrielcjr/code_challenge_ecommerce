@@ -36,7 +36,7 @@
                     {% for err in import_result.errors %}
                     <div class="p-3 text-xs">
                         <span class="font-mono font-bold">Row {{ err.row }}:</span> <span class="text-red-700">{{ err.error }}</span>
-                        <pre class="mt-1 text-[10px] bg-white p-1 rounded border overflow-x-auto">{{ err.data }}</pre>
+                        <span class="ml-1 font-mono text-[10px] text-red-500">{{ err.sku|default:"" }}</span>
                     </div>
                     {% endfor %}
                 </div>

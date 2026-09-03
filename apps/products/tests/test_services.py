@@ -1,11 +1,19 @@
+import io
+import math
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.db import connection
 from django.test import TestCase
+from django.test.utils import CaptureQueriesContext
 
 from apps.products.models import CategoryChoices, Product
-from apps.products.services import ProductService
+from apps.products.services import (
+    CSV_BATCH_SIZE,
+    MAX_REPORTED_ERRORS,
+    ProductService,
+)
 
 
 class ProductServiceTest(TestCase):
@@ -192,3 +200,79 @@ class ProductServiceTest(TestCase):
 
         formula_product = Product.objects.get(sku="FORM-001")
         self.assertFalse(formula_product.name.startswith("="))
+
+
+class CSVImportMemoryTest(TestCase):
+    HEADER = "name,sku,description,category,price,stock,weight_kg\n"
+
+    def _row(self, index):
+        return (
+            f"Bulk Product {index},BULK-{index:06d},Description {index},"
+            f"ELECTRONICS,{10 + index % 90}.99,{index % 50},1.25\n"
+        )
+
+    def _uploaded_file(self, rows):
+        payload = self.HEADER + "".join(self._row(i) for i in range(rows))
+        return SimpleUploadedFile(
+            "bulk.csv", payload.encode("utf-8"), content_type="text/csv"
+        )
+
+    def test_import_large_file_is_batched_not_row_by_row(self):
+        rows = 2000
+        with CaptureQueriesContext(connection) as ctx:
+            result = ProductService.import_products_from_csv(self._uploaded_file(rows))
+
+        self.assertEqual(result["created"], rows)
+        self.assertEqual(Product.objects.count(), rows)
+
+        expected_batches = math.ceil(rows / CSV_BATCH_SIZE)
+        self.assertLess(len(ctx.captured_queries), expected_batches * 12)
+
+    def test_import_streams_without_reading_whole_file(self):
+        payload = (self.HEADER + "".join(self._row(i) for i in range(1500))).encode()
+        source = io.BytesIO(payload)
+        reads = []
+
+        class CountingStream(io.RawIOBase):
+            def readable(self):
+                return True
+
+            def readinto(self, buffer):
+                chunk = source.read(len(buffer))
+                reads.append(len(chunk))
+                buffer[: len(chunk)] = chunk
+                return len(chunk)
+
+        stream = io.BufferedReader(CountingStream(), buffer_size=8192)
+        result = ProductService.import_products_from_csv(stream)
+
+        self.assertEqual(result["created"], 1500)
+        self.assertGreater(len(reads), 1)
+        self.assertLessEqual(max(reads), 8192)
+
+    def test_import_reports_are_capped_for_pathological_files(self):
+        bad_rows = "".join(
+            f"Bad {i},BAD-{i:05d},desc,ELECTRONICS,not-a-price,5,1.0\n"
+            for i in range(MAX_REPORTED_ERRORS + 500)
+        )
+        csv_file = SimpleUploadedFile(
+            "bad.csv", (self.HEADER + bad_rows).encode(), content_type="text/csv"
+        )
+
+        result = ProductService.import_products_from_csv(csv_file)
+
+        self.assertEqual(result["created"], 0)
+        self.assertEqual(len(result["errors"]), MAX_REPORTED_ERRORS)
+        self.assertEqual(result["error_count"], MAX_REPORTED_ERRORS)
+
+    def test_import_upserts_existing_rows_in_bulk(self):
+        self.assertEqual(
+            ProductService.import_products_from_csv(self._uploaded_file(600))["created"],
+            600,
+        )
+
+        result = ProductService.import_products_from_csv(self._uploaded_file(600))
+
+        self.assertEqual(result["created"], 0)
+        self.assertEqual(result["updated"], 600)
+        self.assertEqual(Product.objects.count(), 600)

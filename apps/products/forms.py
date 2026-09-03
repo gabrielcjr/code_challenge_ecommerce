@@ -4,6 +4,8 @@ from django import forms
 
 from .models import CategoryChoices, Product
 
+MAX_CSV_UPLOAD_BYTES = 200 * 1024 * 1024
+
 INPUT_CLASS = (
     "w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2.5 text-sm "
     "text-zinc-900 placeholder-zinc-400 shadow-sm focus:border-zinc-900 "
@@ -98,8 +100,10 @@ class CSVImportForm(forms.Form):
         if not csv_file.name.lower().endswith(".csv"):
             raise forms.ValidationError("File must be CSV format")
 
-        if csv_file.size > 5 * 1024 * 1024:
-            raise forms.ValidationError("File size must be less than 5MB")
+        if csv_file.size > MAX_CSV_UPLOAD_BYTES:
+            raise forms.ValidationError(
+                f"File size must be less than {MAX_CSV_UPLOAD_BYTES // (1024 * 1024)}MB"
+            )
 
         return csv_file
 
