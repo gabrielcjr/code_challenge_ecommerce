@@ -13,10 +13,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Environment File
-        run: |
-          cp .env.example .env
-
       - name: Start Docker Compose
         run: |
           docker compose up -d --build
@@ -25,6 +21,17 @@ jobs:
       - name: Run Linters
         run: |
           docker compose exec -T web make run-check-linters
+
+      - name: Verify the app boots and serves without manual setup
+        run: |
+          for attempt in $(seq 1 30); do
+            status=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/ || true)
+            [ "$status" = "200" ] && break
+            sleep 2
+          done
+          test "$status" = "200"
+          docker compose exec -T web python manage.py shell -c \
+            "from apps.products.models import Product; assert Product.objects.exists()"
 
       - name: Run Tests
         run: |

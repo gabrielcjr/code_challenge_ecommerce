@@ -57,6 +57,7 @@ run-fix-linters:
 
 test:
 	USE_SQLITE_FOR_TESTS=1 python manage.py test --verbosity=2
+	@echo "NOTE: concurrency tests need PostgreSQL, run 'make docker-test' for full coverage"
 
 test-coverage:
 	USE_SQLITE_FOR_TESTS=1 coverage run --source='.' manage.py test && coverage report
@@ -78,6 +79,12 @@ docker-migrate:
 
 docker-seed:
 	docker compose exec web python manage.py seed --refresh
+
+docker-test:
+	docker compose exec -T web python manage.py test --verbosity=2
+
+docker-test-concurrency:
+	docker compose exec -T web python manage.py test apps.orders.tests.test_concurrency --verbosity=2
 
 tailwind-init:
 	npm install
